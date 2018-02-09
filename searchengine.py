@@ -1,7 +1,11 @@
 import urllib2
+import sys
 from BeautifulSoup import *
 from urlparse import urljoin
 from sqlite3 import dbapi2 as sqlite
+
+reload(sys)
+sys.setdefaultencoding( "utf-8" )
 
 # ignore words
 ignorewords = set(['the', 'of', 'to', 'and', 'a', 'in', 'is', 'it'])
@@ -20,23 +24,70 @@ class crawler:
 
     # get entry id, add to db if not exsited
     def getentryid(self, table, field, value, createnew = True):
-        return None
+        cur = self.con.execute("select rowid from %s where %s='%s'" % (table, field, value))
+	res = cur.fetchone()
+	if res == None:
+	    cur = self.con.execute("insert into %s (%s) values ('%s')" % (table, field, value))
+	    return cur.lastrowid
+	else: 
+	    # debug
+	    print res
+	    return res[0]
 
     # add index for page
     def addtoindex(self, url, soup):
+        if self.isindexed(url): return
         print 'Indexing %s' % url
+
+	# get word
+	text = self.gettextonly(soup)
+	#print("text: %s" % (text))
+	words = self.seperatewords(text)
+	print("words: %s" % (words))
+
+	# get urlid
+	urlid = self.getentryid('urllist', 'url', url)
+
+	# link word to url
+	for i in range(len(words)):
+	    word = words[i]
+	    if word in ignorewords: continue
+	    print("linking word:%s to url:%s" % (word, url))
+	    wordid = self.getentryid('wordlist', 'word', word)
+	    self.con.execute("insert into wordlocation(urlid, wordid, location) \
+	                    values (%d, %d, %d)" % (urlid, wordid, i))
 
     # get text from page
     def gettextonly(self, soup):
-        return None
+        v = soup.string
+	if v == None:
+	    c = soup.contents
+	    resulttext = ''
+	    for t in c:
+	        subtext = self.gettextonly(t)
+		resulttext += subtext + '\n'
+            return resulttext
+	else:
+	    return v.strip()
 
     # seperate words
     def seperatewords(self, text):
-        return None
+        #splitter = re.compile('"\\W*')
+        splitter = re.compile('\W*')
+	return [s.lower() for s in splitter.split(text) if s!='']
 
     # check if url already in index
     def isindexed(self, url):
-        return False
+        u = self.con.execute("select rowid from urllist where url='%s'" % (url)).fetchone()
+	# debug 
+	print("u:")
+	print u
+	if u!=None:
+	    # check if already indexed
+	    v = self.con.execute('select * from wordlocation where urlid=%d' % u[0]).fetchone()
+	    if v!=None: return True
+	return False
+
 
     # add url linking two pages
     def addlinkerref(self, urlFrom, urlTo, linkText):
@@ -73,7 +124,7 @@ class crawler:
 		        # join domain & uri
 		        url=urljoin(page, link['href'])
 			if url.find("'") != -1: continue # ??
-			#print "page=%s link=%s url=%s" %(page, link, url) ###
+			print "page: %s linkurl: %s" %(page, url) ###
 			url = url.split('#')[0]
 			if url[0:4] == 'http' and not self.isindexed(url):
 			    newpages.add(url)
@@ -103,8 +154,6 @@ class crawler:
 	self.dbcommit()
      
         
-
-
 
 
 
