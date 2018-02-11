@@ -14,6 +14,7 @@ pagelist = ['https://en.wikipedia.org/wiki/Python']
 #crawler = searchengine.crawler(db_file)
 #crawler.crawl(pagelist, depth=2)
 
-# search
+# query
 se = searchengine.searcher('searchindex.db')
-se.getmatchrows('programming language')
+#se.getmatchrows('programming language')
+se.query('programming language')
