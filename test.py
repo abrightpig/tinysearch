@@ -5,11 +5,12 @@ import searchengine
 
 db_file = "searchindex.db"
 
+# create table
+#crawler = searchengine.crawler(db_file)
+#crawler.createindextables()
 
+# crawl
 pagelist = ['https://en.wikipedia.org/wiki/Python']
 crawler = searchengine.crawler(db_file)
-if not os.path.exists(db_file):
-    #os.remove(db_file)
-    crawler.createindextables()
 crawler.crawl(pagelist, depth=2)
 

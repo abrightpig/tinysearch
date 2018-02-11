@@ -73,8 +73,7 @@ class crawler:
 
     # seperate words
     def seperatewords(self, text):
-        #splitter = re.compile('"\\W*')
-        splitter = re.compile('\W*')
+        splitter = re.compile('\\W*')
 	return [s.lower() for s in splitter.split(text) if s!='']
 
     # check if url already in index
@@ -137,19 +136,24 @@ class crawler:
 
     # create db
     def createindextables(self):
+        print("creating table urllist...")
         self.con.execute("create table urllist(url)")
         self.con.execute("create index urlidx on urllist(url)")
 
+        print("creating table wordlist...")
         self.con.execute("create table wordlist(word)")
         self.con.execute("create index wordinx on wordlist(word)")
         
+        print("creating table wordlocation...")
 	self.con.execute("create table wordlocation(urlid, wordid, location)")
         self.con.execute("create index wordurlidx on wordlocation(wordid)")
         
+        print("creating table link...")
 	self.con.execute("create table link(fromid integer, toid integer)")
 	self.con.execute("create index urltoidx on link(toid)")
 	self.con.execute("create index urlfromidx on link(fromid)")
 
+        print("creating table linkwords...")
         self.con.execute("create table linkwords(wordid, linkid)")
 	self.dbcommit()
      
