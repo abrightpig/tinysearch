@@ -31,7 +31,8 @@ class crawler:
 	    return cur.lastrowid
 	else: 
 	    # debug
-	    print res
+	    #print "res: "
+	    #print res
 	    return res[0]
 
     # add index for page
@@ -52,7 +53,7 @@ class crawler:
 	for i in range(len(words)):
 	    word = words[i]
 	    if word in ignorewords: continue
-	    print("linking word:%s to url:%s" % (word, url))
+	    #print("linking word:%s to url:%s" % (word, url))
 	    wordid = self.getentryid('wordlist', 'word', word)
 	    self.con.execute("insert into wordlocation(urlid, wordid, location) \
 	                    values (%d, %d, %d)" % (urlid, wordid, i))
@@ -80,8 +81,8 @@ class crawler:
     def isindexed(self, url):
         u = self.con.execute("select rowid from urllist where url='%s'" % (url)).fetchone()
 	# debug 
-	print("u:")
-	print u
+	#print("u:")
+	#print u
 	if u!=None:
 	    # check if already indexed
 	    v = self.con.execute('select * from wordlocation where urlid=%d' % u[0]).fetchone()
@@ -94,16 +95,15 @@ class crawler:
         pass
 
     # crawl pages
-    #def crawl(self, pages, depth=2):
-    def crawl(self, pages, depth=1):
+    def crawl(self, pages, depth=2):
         for i in range(depth):
 	    newpages = set()
 	    count = 0 ###
 	    for page in pages:
 	        ### 
-		count = count + 1
-		if (count > 10):
-		    break
+		#count = count + 1
+		#if (count > 10):
+		#    break
 		###
 	        try:
 		    # page: url
@@ -124,7 +124,7 @@ class crawler:
 		        # join domain & uri
 		        url=urljoin(page, link['href'])
 			if url.find("'") != -1: continue # ??
-			print "page: %s linkurl: %s" %(page, url) ###
+			print "linking %s %s" %(page, url) ###
 			url = url.split('#')[0]
 			if url[0:4] == 'http' and not self.isindexed(url):
 			    newpages.add(url)
