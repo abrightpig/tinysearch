@@ -99,11 +99,11 @@ class crawler:
 	    newpages = set()
 	    count = 0 ###
 	    for page in pages:
-	        ### 
+	        ## 
 		#count = count + 1
 		#if (count > 10):
 		#    break
-		###
+		##
 	        try:
 		    # page: url
 		    c = urllib2.urlopen(page)
@@ -160,4 +160,48 @@ class crawler:
         
 
 
+class searcher:
+    def __init__(self, dbname):
+        self.con = sqlite.connect(dbname)
+
+    def __del__(self):
+        self.con.close()
+
+    def getmatchrows(self, q):
+        # generate query string
+	fieldlist = 'w0.urlid'
+	tablelist = ''
+	clauselist = ''
+	wordids = []
+
+	# prepare query
+	words = q.split(' ')
+	tablenum = 0
+	for word in words:
+	    # get word id
+	    wordrow = self.con.execute("select rowid from wordlist where word='%s'" % (word)).fetchone()
+            if wordrow != None:
+	        wordid = wordrow[0]
+		wordids.append(wordid)
+		if tablenum > 0:
+		    tablelist += ','
+		    clauselist += ' and '
+		    clauselist += ' w%d.urlid=w%d.urlid and ' % (tablenum - 1, tablenum)
+		fieldlist += ',w%d.location' % tablenum
+		tablelist += 'wordlocation w%d' % tablenum
+		clauselist += 'w%d.wordid=%d' % (tablenum, wordid)
+		tablenum += 1
+	
+	# execute query
+	fullquery = 'select %s from %s where %s' % (fieldlist, tablelist, clauselist)
+        print fullquery 
+	cur = self.con.execute(fullquery)
+	rows = [row for row in cur]
+
+        print 'rows:'
+	print rows
+        print 'wordid:'
+	print wordids
+	return rows, wordids
+       
 
