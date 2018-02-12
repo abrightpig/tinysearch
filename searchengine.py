@@ -208,11 +208,16 @@ class searcher:
         totalscores = dict([(row[0], 0) for row in rows])
 
 	# todo 
-	weights = []
+	#weights = [(1.0, self.frequencyscore(rows))]
+	#weights = [(1.0, self.locationscore(rows))]
+	#weights = [(1.0, self.distancescore(rows))]
+	weights = [(1.0, self.locationscore(rows)),(1.5, self.frequencyscore(rows)),(1.5, self.distancescore(rows))]
 
 	for (weight, scores) in weights:
-	    for url in tatalscores:
+	    ## print "weight", weight
+	    for url in totalscores:
 	        totalscores[url] += weight * scores[url]
+	        ## print "weight", weight, "url", url,  "totalscores[url]", totalscores[url]
 	return totalscores
 
     def geturlname(self, id):
@@ -221,6 +226,45 @@ class searcher:
     def query(self, q):
         rows, wordids = self.getmatchrows(q)
 	scores = self.getscoredlist(rows, wordids)
+	print "scores", scores
         rankedscores = sorted([(score, url) for (url, score) in scores.items()], reverse=1)
 	for (score, urlid) in rankedscores[0:10]:
 	    print '%f \t %s' % (score, self.geturlname(urlid))
+
+    ## to analyze
+    def normalizescores(self, scores, smallIsBetter = 0):
+        vsmall = 0.00001           # very small constant
+	if smallIsBetter:
+	    minscore = min(scores.values())
+	    return dict([(u, float(minscore)/max(vsmall,l)) for (u,l) in scores.items()])
+	else:
+	    maxscore = max(scores.values())
+	    if maxscore == 0: maxscore = vsmall
+	    return dict([(u, float(c) / maxscore) for (u,c) in scores.items()])
+
+    # score_1: frequency
+    def frequencyscore(self, rows):
+        counts = dict([(row[0],0) for row in rows])
+	for row in rows: counts[row[0]] += 1
+	return self.normalizescores(counts)
+
+    # score_2: location
+    def locationscore(self, rows):
+        locations = dict([(row[0], 1000000) for row in rows])
+	for row in rows:
+	    loc = sum(row[1:])
+	    #print  "row:", row, "row[1:]", row[1:], "locations", locations[row[0]], "loc:", loc
+	    if loc < locations[row[0]]: locations[row[0]] = loc
+	return self.normalizescores(locations, smallIsBetter = 1)
+
+    # score_3: distance
+    def distancescore(self, rows):
+        # equivalent score for only one word  
+	if len(rows[0]) <= 2: return dict([row[0], 1.0] for row in rows)
+
+        mindistance = dict([(row[0], 1000000) for row in rows])
+
+	for row in rows:
+	    dist = sum([abs(row[i] - row[i-1]) for i in range(2,len(row))])
+	    if dist < mindistance[row[0]]: mindistance[row[0]] = dist
+	return self.normalizescores(mindistance, smallIsBetter=1)
